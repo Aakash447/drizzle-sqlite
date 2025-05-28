@@ -80,21 +80,47 @@ export async function updateUser(req: any, res: any) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+
     // Build update object with only provided fields
     const updateData: Partial<User> = {};
-    if (!Utils.isEmpty(name)) {
+    if (Utils.isUndefined(name) === false) {
       updateData.name = name;
     }
-    if (!Utils.isEmpty(email)) {
+    if (Utils.isUndefined(email) === false) {
       updateData.email = email;
     }
-    if (!Utils.isEmpty(age)) {
+    if (Utils.isUndefined(age) === false) {
       updateData.age = age;
     }
 
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ message: 'No fields provided for update' });
     }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const userSchema = z.object({
+      name: z.string().min(2, 'Name must have atleast 2 characters').optional(),
+      email: z.string().regex(emailPattern, 'Invalid email format').optional(),
+      age: z.number().int().positive('Age must be a positive integer').optional(),
+    });
+
+    const keys = Object.keys(updateData)
+    let valObject: { [key: string]: any } = {};
+    keys.map(item => {
+      valObject[item] = updateData[item as keyof User];
+    })
+
+    const parseResult = userSchema.safeParse(valObject);
+    if (!parseResult.success) {
+      console.log('parseResult.error.errors',parseResult.error.errors)
+      return res.status(400).json({
+        message: parseResult.error.errors
+          .map(e => `${e.path.join('.')}: ${e.message}`)
+          .join(', '),
+      });
+    }
+
+    console.log('Update data: ', updateData);
 
     // Update user with only provided fields
     const [updatedUser]: User[] = await db

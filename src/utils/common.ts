@@ -6,6 +6,12 @@ class Utils {
         if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) return true;
         return false;
     }
+
+    static isUndefined(value:any) {
+        return value === undefined;
+    }
 }
+
+
 
 export default Utils;
